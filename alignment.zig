@@ -1,9 +1,16 @@
 const std = @import("std");
 
+// some fun facts
+// const unaligned_data: [N]u64 align(8) = [_]u64{0} ** N; -> legal
+// const unaligned_data: [N]u64 align(8) = std.mem.zeroes([N]u64); -> illigal
+// const unaligned_data: [N]u8 align(8) = std.mem.zeroes([N]u8); -> legal
+
 const N = 1_000_000;
 
 fn benchmark_unaligned() void {
-    const unaligned_data: [N]u8 align(1) = std.mem.zeroes([N]u8);
+    // pretty funny that realistically cannot build with bit type that have smaller alignment than target type
+    // e.g u4 align(8) takes like ages to compile
+    const unaligned_data: [N]u2 align(16) = [_]u2{0} ** N;
     var sum: u64 = 0;
 
     for (unaligned_data) |value| {
@@ -21,6 +28,15 @@ fn benchmark_aligned() void {
 }
 
 pub fn main() void {
+    inline for (.{ u8, u16, u32, u64 }) |T| {
+        std.debug.print("alignOf({}) == {}\n", .{ T, @alignOf(T) });
+    }
+
+    // const data: [N]u64 align(8) = [_]u64{0} ** N;
+    // const _data: [N]u8 align(8) = std.mem.zeroes([N]u8);
+    // std.debug.print("Aligned duration: {x} ms\n", .{data});
+    // const data: [N]u8 align(8) = std.mem.zeroes([N]u8);
+
     // TODO: something weird happening here.
     // 1) aligned and unaligned pretty much have no difference in time.
     // 2) there is gap between aligned and unaligned -- not because of alignment, but because of just a order. the one goes first takes more time.
